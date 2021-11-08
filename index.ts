@@ -12,9 +12,7 @@ const fetchShelves = async () => {
   try {
     const url = 'https://www.amazon.com/s?crid=36QNR0DBY6M7J&k=shelves&ref=glow_cls&refresh=1&sprefix=s%2Caps%2C309';
     const res = await fetch(url);
-    // const body = new Uint8Array(await res.arrayBuffer());
     const html = await res.text()
-    // console.log(html)
     const $ = cheerio.load(html)
     const shelves: Product[] = [];
 
@@ -26,7 +24,7 @@ const fetchShelves = async () => {
             const reviews = shelf.find('div.a-section.a-spacing-none.a-spacing-top-micro > div.a-row.a-size-small').children('span').last().attr('aria-label')
             const stars = shelf.find('div.a-section.a-spacing-none.a-spacing-top-micro > div > span').attr('aria-label')
             const price = shelf.find('span.a-price > span.a-offscreen').text()
-            let element: Product = {
+            const element: Product = {
               title,
               image: image,
               link: `https://amazon.com${link}`,
@@ -43,11 +41,19 @@ const fetchShelves = async () => {
  
             shelves.push(element)
         });
+
+        const csvContent = "Title, Image, Link, Price, Reviews, Stars" + '\n' + shelves.map(element => {
+          return Object.values(element).map(item => `"${item}"`).join(',')
+       }).join("\n");
+
+       const encoder = new TextEncoder();
+       const data = encoder.encode(csvContent);
+
+       Deno.writeFileSync('saved-shelves.csv', data)
     
-        return shelves;
   } catch (error) {
     throw error;
   }
 }
 
-fetchShelves().then((shelves) => console.log(shelves));
+fetchShelves();
